@@ -4,45 +4,124 @@
 
 package frc.robot.subsystems;
 
+import com.kauailabs.navx.frc.AHRS;
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.RelativeEncoder;
-import com.revrobotics.SparkMaxPIDController;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 
+import edu.wpi.first.wpilibj.SerialPort;
+import edu.wpi.first.wpilibj.drive.DifferentialDrive;
+import edu.wpi.first.wpilibj.motorcontrol.MotorControllerGroup;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
+import frc.robot.Constants.DriveConstants;
 
 public class PIDDriveSubsystem extends SubsystemBase {
-  public final CANSparkMax leftFrontMotor = new CANSparkMax(Constants.leftBackMotorID, MotorType.kBrushless);
-  public RelativeEncoder leftFrontEncoder = leftFrontMotor.getEncoder();
-  private SparkMaxPIDController leftFrontPIDCon = leftFrontMotor.getPIDController();
-  int smartMotionSlot = 0;
-  int allowedErr;
-  int minVel;
+  public final CANSparkMax leftFrontMotor = new CANSparkMax(Constants.leftFrontMotorID, MotorType.kBrushless);
+  public final CANSparkMax leftBackMotor = new CANSparkMax(Constants.leftBackMotorID, MotorType.kBrushless);
+  public final CANSparkMax rightFrontMotor = new CANSparkMax(Constants.rightFrontMotorID, MotorType.kBrushless);
+  public final CANSparkMax rightBackMotor = new CANSparkMax(Constants.rightBackMotorID, MotorType.kBrushless);
+  public final MotorControllerGroup m_leftMotors = new MotorControllerGroup(leftFrontMotor, leftBackMotor);
+  public final MotorControllerGroup m_rightMotors = new MotorControllerGroup(rightFrontMotor, rightBackMotor);
+  public RelativeEncoder m_leftFrontEncoder = leftFrontMotor.getEncoder();
+  public RelativeEncoder leftBackEncoder = leftBackMotor.getEncoder();
+  public RelativeEncoder m_rightFrontEncoder = rightFrontMotor.getEncoder();
+  public RelativeEncoder rightBackEncoder = rightBackMotor.getEncoder();
 
+  private final DifferentialDrive m_drive = new DifferentialDrive(m_leftMotors, m_rightMotors);
+
+  // The gyro sensor
+  private final AHRS m_gyro = new AHRS(SerialPort.Port.kUSB1);
+
+  /** Creates a new DriveSubsystem. */
   public PIDDriveSubsystem() {
+    // We need to invert one side of the drivetrain so that positive voltages
+    // result in both sides moving forward. Depending on how your robot's
+    // gearbox is constructed, you might have to invert the left side instead.
+    m_rightMotors.setInverted(true);
     leftFrontMotor.restoreFactoryDefaults();
-    initializePID(leftFrontPIDCon);
-  }
-  public void initializePID(SparkMaxPIDController p){
-    p.setP(Constants.kP);
-    p.setI(Constants.kI);
-    p.setD(Constants.kD);
-    p.setIZone(Constants.kIz);
-    p.setFF(Constants.kFF);
-    p.setOutputRange(Constants.kMinOutput, Constants.kMaxOutput);
-    p.setSmartMotionMaxVelocity(Constants.maxVel, smartMotionSlot);
-    p.setSmartMotionMinOutputVelocity(minVel, smartMotionSlot);
-    p.setSmartMotionMaxAccel(Constants.maxAcc, smartMotionSlot);
-    p.setSmartMotionAllowedClosedLoopError(allowedErr, smartMotionSlot);
-  }
-  @Override
-  public void periodic() {
-    // This method will be called once per scheduler run
+    leftBackMotor.restoreFactoryDefaults();
+    rightBackMotor.restoreFactoryDefaults();
+    rightFrontMotor.restoreFactoryDefaults();
+    // Sets the distance per pulse for the encoders
+    m_leftFrontEncoder.setVelocityConversionFactor(DriveConstants.kEncoderDistancePerPulse);
+    m_leftFrontEncoder.setPositionConversionFactor(DriveConstants.kEncoderDistancePerPulse);
+    m_rightFrontEncoder.setVelocityConversionFactor(DriveConstants.kEncoderDistancePerPulse);
+    m_rightFrontEncoder.setPositionConversionFactor(DriveConstants.kEncoderDistancePerPulse);
   }
 
-  @Override
-  public void simulationPeriodic() {
-    // This method will be called once per scheduler run during simulation
+  /**
+   * Drives the robot using arcade controls.
+   *
+   * @param fwd the commanded forward movement
+   * @param rot the commanded rotation
+   */
+  public void arcadeDrive(double fwd, double rot) {
+    m_drive.arcadeDrive(fwd, rot);
+  }
+
+  /** Resets the drive encoders to currently read a position of 0. */
+  public void resetEncoders() {
+    m_leftFrontEncoder.setPosition(0);
+    m_rightFrontEncoder.setPosition(0);
+  }
+
+  /**
+   * Gets the average distance of the two encoders.
+   *
+   * @return the average of the two encoder readings
+   */
+  public double getAverageEncoderDistance() {
+    return (m_leftFrontEncoder.getPosition() + m_rightFrontEncoder.getPosition()) / 2.0;
+  }
+
+  /**
+   * Gets the left drive encoder.
+   *
+   * @return the left drive encoder
+   */
+  public RelativeEncoder getLeftEncoder() {
+    return m_leftFrontEncoder;
+  }
+
+  /**
+   * Gets the right drive encoder.
+   *
+   * @return the right drive encoder
+   */
+  public RelativeEncoder getRightEncoder() {
+    return m_rightFrontEncoder;
+  }
+
+  /**
+   * Sets the max output of the drive. Useful for scaling the drive to drive more slowly.
+   *
+   * @param maxOutput the maximum output to which the drive will be constrained
+   */
+  public void setMaxOutput(double maxOutput) {
+    m_drive.setMaxOutput(maxOutput);
+  }
+
+  /** Zeroes the heading of the robot. */
+  public void zeroHeading() {
+    m_gyro.reset();
+  }
+
+  /**
+   * Returns the heading of the robot.
+   *
+   * @return the robot's heading in degrees, from 180 to 180
+   */
+  public double getHeading() {
+    return Math.IEEEremainder(m_gyro.getAngle(), 360) * (DriveConstants.kGyroReversed ? -1.0 : 1.0);
+  }
+
+  /**
+   * Returns the turn rate of the robot.
+   *
+   * @return The turn rate of the robot, in degrees per second
+   */
+  public double getTurnRate() {
+    return m_gyro.getRate() * (DriveConstants.kGyroReversed ? -1.0 : 1.0);
   }
 }
