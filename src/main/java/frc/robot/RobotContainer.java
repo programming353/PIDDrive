@@ -4,12 +4,20 @@
 
 package frc.robot;
 
+import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.Joystick;
-import edu.wpi.first.wpilibj.XboxController;
+
+import frc.robot.Constants.DriveConstants;
 import frc.robot.commands.TurnToAngleCommand;
+import frc.robot.commands.TurnToAngleProfiledCommand;
 import frc.robot.subsystems.PIDDriveSubsystem;
+
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.InstantCommand;
+import edu.wpi.first.wpilibj2.command.PIDCommand;
+import edu.wpi.first.wpilibj2.command.RunCommand;
+import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 
 /**
  * This class is where the bulk of the robot should be declared. Since Command-based is a
@@ -19,24 +27,63 @@ import edu.wpi.first.wpilibj2.command.Command;
  */
 public class RobotContainer {
   // The robot's subsystems and commands are defined here...
-  private final PIDDriveSubsystem m_exampleSubsystem = new PIDDriveSubsystem();
-
-  private final TurnToAngleCommand m_autoCommand = new TurnToAngleCommand(m_exampleSubsystem);
+  private final PIDDriveSubsystem m_robotDrive  = new PIDDriveSubsystem();
 
   public final Joystick driverStick = new Joystick(0);
   /** The container for the robot. Contains subsystems, OI devices, and commands. */
   public RobotContainer() {
     // Configure the button bindings
     configureButtonBindings();
+
+    // Configure default commands
+    // Set the default drive command to split-stick arcade drive
+    m_robotDrive.setDefaultCommand(
+        // A split-stick arcade command, with forward/backward controlled by the left
+        // hand, and turning controlled by the right.
+        new RunCommand(
+            () ->
+                m_robotDrive.arcadeDrive(
+                    -driverStick.getY(), driverStick.getX()),
+            m_robotDrive));
   }
 
   /**
    * Use this method to define your button->command mappings. Buttons can be created by
-   * instantiating a {@link GenericHID} or one of its subclasses ({@link
-   * edu.wpi.first.wpilibj.Joystick} or {@link XboxController}), and then passing it to a {@link
+   * instantiating a {@link edu.wpi.first.wpilibj.GenericHID} or one of its subclasses ({@link
+   * edu.wpi.first.wpilibj.Joystick} or {@link PS4Controller}), and then passing it to a {@link
    * edu.wpi.first.wpilibj2.command.button.JoystickButton}.
    */
-  private void configureButtonBindings() {}
+  private void configureButtonBindings() {
+    // Drive at half speed when the right bumper is held
+    new JoystickButton(driverStick, Constants.halfSpeedButton)
+        .whenPressed(() -> m_robotDrive.setMaxOutput(0.5))
+        .whenReleased(() -> m_robotDrive.setMaxOutput(1));
+
+    // Stabilize robot to drive straight with gyro when left bumper is held
+    new JoystickButton(driverStick, Constants.driveStrightButton)
+        .whenHeld(
+            new PIDCommand(
+                new PIDController(
+                    DriveConstants.kStabilizationP,
+                    DriveConstants.kStabilizationI,
+                    DriveConstants.kStabilizationD),
+                // Close the loop on the turn rate
+                m_robotDrive::getTurnRate,
+                // Setpoint is 0
+                0,
+                // Pipe the output to the turning controls
+                output -> m_robotDrive.arcadeDrive(-driverStick.getY(), output),
+                // Require the robot drive
+                m_robotDrive));
+
+    // Turn to 90 degrees when the 'X' button is pressed, with a 5 second timeout
+    new JoystickButton(driverStick, Constants.turn90Button)
+        .whenPressed(new TurnToAngleCommand(90, m_robotDrive).withTimeout(5));
+
+    // Turn to -90 degrees with a profile when the Circle button is pressed, with a 5 second timeout
+    new JoystickButton(driverStick, Constants.turnNegative90Button)
+        .whenPressed(new TurnToAngleProfiledCommand(-90, m_robotDrive).withTimeout(5));
+  }
 
   /**
    * Use this to pass the autonomous command to the main {@link Robot} class.
@@ -44,7 +91,7 @@ public class RobotContainer {
    * @return the command to run in autonomous
    */
   public Command getAutonomousCommand() {
-    // An ExampleCommand will run in autonomous
-    return m_autoCommand;
+    // no auto
+    return new InstantCommand();
   }
 }
