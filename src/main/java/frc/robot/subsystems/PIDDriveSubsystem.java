@@ -21,8 +21,10 @@ public class PIDDriveSubsystem extends SubsystemBase {
   public final CANSparkMax leftBackMotor = new CANSparkMax(Constants.leftBackMotorID, MotorType.kBrushless);
   public final CANSparkMax rightFrontMotor = new CANSparkMax(Constants.rightFrontMotorID, MotorType.kBrushless);
   public final CANSparkMax rightBackMotor = new CANSparkMax(Constants.rightBackMotorID, MotorType.kBrushless);
+
   public final MotorControllerGroup m_leftMotors = new MotorControllerGroup(leftFrontMotor, leftBackMotor);
   public final MotorControllerGroup m_rightMotors = new MotorControllerGroup(rightFrontMotor, rightBackMotor);
+
   public RelativeEncoder m_leftFrontEncoder = leftFrontMotor.getEncoder();
   public RelativeEncoder leftBackEncoder = leftBackMotor.getEncoder();
   public RelativeEncoder m_rightFrontEncoder = rightFrontMotor.getEncoder();
@@ -44,10 +46,10 @@ public class PIDDriveSubsystem extends SubsystemBase {
     rightBackMotor.restoreFactoryDefaults();
     rightFrontMotor.restoreFactoryDefaults();
     // Sets the distance per pulse for the encoders
-    m_leftFrontEncoder.setVelocityConversionFactor(DriveConstants.kEncoderDistancePerPulse);
-    m_leftFrontEncoder.setPositionConversionFactor(DriveConstants.kEncoderDistancePerPulse);
-    m_rightFrontEncoder.setVelocityConversionFactor(DriveConstants.kEncoderDistancePerPulse);
-    m_rightFrontEncoder.setPositionConversionFactor(DriveConstants.kEncoderDistancePerPulse);
+    m_leftFrontEncoder.setVelocityConversionFactor(DriveConstants.kVelocity);
+    m_leftFrontEncoder.setPositionConversionFactor(DriveConstants.kPosition);
+    m_rightFrontEncoder.setVelocityConversionFactor(DriveConstants.kVelocity);
+    m_rightFrontEncoder.setPositionConversionFactor(DriveConstants.kPosition);
   }
 
   /**

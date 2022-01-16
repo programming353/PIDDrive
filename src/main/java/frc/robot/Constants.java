@@ -28,8 +28,6 @@ public final class Constants {
       public static final int kRightMotor1Port = 2;
       public static final int kRightMotor2Port = 3;
   
-      public static final int[] kLeftEncoderPorts = new int[] {0, 1};
-      public static final int[] kRightEncoderPorts = new int[] {2, 3};
       public static final boolean kLeftEncoderReversed = false;
       public static final boolean kRightEncoderReversed = true;
   
@@ -38,7 +36,9 @@ public final class Constants {
       public static final double kEncoderDistancePerPulse =
           // Assumes the encoders are directly mounted on the wheel shafts
           (kWheelDiameterInches * Math.PI) / (double) kEncoderCPR;
-  
+      public static final double kVelocity = 0;
+      public static final double kPosition = 0;
+      
       public static final boolean kGyroReversed = false;
   
       public static final double kStabilizationP = 1;
