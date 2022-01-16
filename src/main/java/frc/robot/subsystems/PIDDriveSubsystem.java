@@ -13,9 +13,21 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
 
 public class PIDDriveSubsystem extends SubsystemBase {
-  public final CANSparkMax leftFrontMotor = new CANSparkMax(Constants.leftBackMotorID, MotorType.kBrushless);
+  public final CANSparkMax leftFrontMotor = new CANSparkMax(Constants.leftFrontMotorID, MotorType.kBrushless);
+  public final CANSparkMax leftBackMotor = new CANSparkMax(Constants.leftBackMotorID, MotorType.kBrushless);
+  public final CANSparkMax rightFrontMotor = new CANSparkMax(Constants.rightFrontMotorID, MotorType.kBrushless);
+  public final CANSparkMax rightBackMotor = new CANSparkMax(Constants.rightBackMotorID, MotorType.kBrushless);
+
   public RelativeEncoder leftFrontEncoder = leftFrontMotor.getEncoder();
+  public RelativeEncoder leftBackEncoder = leftBackMotor.getEncoder();
+  public RelativeEncoder rightFrontEncoder = rightFrontMotor.getEncoder();
+  public RelativeEncoder rightBackEncoder = rightBackMotor.getEncoder();
+
   private SparkMaxPIDController leftFrontPIDCon = leftFrontMotor.getPIDController();
+  private SparkMaxPIDController leftBackPIDCon = leftBackMotor.getPIDController();
+  private SparkMaxPIDController rightFrontPIDCon = rightFrontMotor.getPIDController();
+  private SparkMaxPIDController rightBackPIDCon = rightBackMotor.getPIDController();
+
   int smartMotionSlot = 0;
   int allowedErr;
   int minVel;
@@ -23,6 +35,9 @@ public class PIDDriveSubsystem extends SubsystemBase {
   public PIDDriveSubsystem() {
     leftFrontMotor.restoreFactoryDefaults();
     initializePID(leftFrontPIDCon);
+    initializePID(leftBackPIDCon);
+    initializePID(rightFrontPIDCon);
+    initializePID(rightBackPIDCon);
   }
   public void initializePID(SparkMaxPIDController p){
     p.setP(Constants.kP);
